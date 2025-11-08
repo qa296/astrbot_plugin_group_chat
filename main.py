@@ -166,7 +166,7 @@ class GroupChatPlugin(Star):
             if result is None or not result.chain:
                 return
 
-            # 检查是否为LLM结果且包含<NO_RESPONSE>标记
+            # 检查是否为LLM结果且包含不回复标记
             if result.is_llm_result():
                 # 获取消息文本内容
                 message_text = ""
@@ -174,9 +174,13 @@ class GroupChatPlugin(Star):
                     if hasattr(comp, 'text'):
                         message_text += comp.text
 
-                # 如果包含<NO_RESPONSE>标记，清空事件结果以阻止消息发送
-                if "<NO_RESPONSE>" in message_text:
-                    logger.debug("检测到读空气标记<NO_RESPONSE>，阻止消息发送")
+                # 兼容多种不回复标记（包括配置项与历史写法）
+                cfg_marker = getattr(self.config, 'air_reading_no_reply_marker', None)
+                markers = [m for m in [cfg_marker, "<NO_RESPONSE>", "[DO_NOT_REPLY]"] if m]
+
+                # 如果包含任一不回复标记，清空事件结果以阻止消息发送
+                if any(m in message_text for m in markers):
+                    logger.debug("检测到读空气不回复标记，阻止消息发送")
                     event.clear_result()
                     logger.debug("已清空事件结果，消息发送被阻止")
 

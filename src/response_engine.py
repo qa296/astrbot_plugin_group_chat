@@ -184,10 +184,13 @@ class ResponseEngine:
         # 调用 LLM 进行读空气决策
         llm_response = await self._call_llm_for_air_reading(air_reading_prompt, event)
         
-        # 检查LLM的回复是否是“不回复”的标记
-        no_reply_marker = "<NO_RESPONSE>"
+        # 检查LLM的回复是否是不回复的标记（兼容多种写法与配置）
+        # 优先使用配置中的标记，其次兼容历史写法
+        cfg_marker = getattr(self.config, 'air_reading_no_reply_marker', None)
+        no_reply_markers = [m for m in [cfg_marker, "<NO_RESPONSE>", "[DO_NOT_REPLY]"] if m]
+        resp_text = llm_response.strip()
 
-        if no_reply_marker in llm_response.strip():
+        if any(m in resp_text for m in no_reply_markers):
             logger.info(f"ResponseEngine: LLM决定跳过回复。")
             return {
                 "should_reply": False,
@@ -202,7 +205,7 @@ class ResponseEngine:
             # LLM的回复就是直接要发送的内容
             return {
                 "should_reply": True,
-                "content": llm_response.strip(),
+                "content": resp_text,
                 "decision_method": "air_reading",
                 "llm_response": llm_response,
                 "willingness_score": willingness_result.get("willingness_score")
@@ -241,6 +244,7 @@ class ResponseEngine:
         history_str = "\n".join([f"{msg.get('role', '')}: {msg.get('content', '')}" for msg in conversation_history[-3:]]) if conversation_history else "无最近对话。"
 
         # 构建提示
+        no_reply_marker = getattr(self.config, 'air_reading_no_reply_marker', "[DO_NOT_REPLY]")
         prompt = f"""你是一个拟人化的聊天助手，需要判断是否应该回复以下消息。你的任务是“读空气”，即根据上下文判断当前聊天氛围是否适合回复。
 
 【当前消息】
@@ -267,7 +271,7 @@ class ResponseEngine:
 请根据以上所有信息，判断是否应该回复这条消息。
 
 **如果你认为不应该回复**，请只回复以下标记，不要添加任何其他文字或解释：
-[DO_NOT_REPLY]
+{no_reply_marker}
 
 **如果你认为应该回复**，请直接给出你自然、友好的回复内容。
 
