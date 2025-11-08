@@ -1,5 +1,5 @@
 name: "astrbot_plugin_group_chat"
 author: "qa296"
 desc: "一个先进的群聊交互插件，采用AI算法实现智能回复决策，能像真人一样主动参与对话，实现拟人化的主动交互体验。"
-version: "1.0.3"
+version: "1.0.4"
 repo: "https://github.com/qa296/astrbot_plugin_group_chat" # 请替换为您的实际仓库地址
