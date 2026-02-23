@@ -1,14 +1,1 @@
-# AstrBot Group Chat Plugin Dependencies
-# 核心依赖由AstrBot提供，此处列出可选的第三方依赖
-
-# 如果需要额外的HTTP客户端（可选）
-# aiohttp>=3.8.0
-
-# 如果需要额外的数据处理（可选）
-# pandas>=1.5.0
-
-# 如果需要额外的网络请求（可选）
-# httpx>=0.24.0
-
-# 如果需要额外的日期时间处理（可选）
-# python-dateutil>=2.8.0
+jieba>=0.42.1

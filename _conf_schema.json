@@ -1,108 +1,197 @@
 {
   "list_mode": {
-    "description": "名单模式：blacklist（黑名单模式）或 whitelist（白名单模式）",
+    "description": "名单模式",
     "type": "string",
-    "options": ["blacklist", "whitelist"],
-    "default": "blacklist"
+    "hint": "blacklist: 黑名单模式(除名单外的群启用); whitelist: 白名单模式(仅名单内的群启用)",
+    "default": "blacklist",
+    "options": ["blacklist", "whitelist"]
   },
   "groups": {
-    "description": "群组名单列表",
+    "description": "群组名单",
     "type": "list",
+    "hint": "根据名单模式，填写需要启用/禁用的群号",
     "default": []
   },
-  "base_probability": {
-    "description": "基础回复概率",
-    "type": "float",
-    "default": 0.3
+  "state_machine": {
+    "description": "心流状态机配置",
+    "type": "object",
+    "items": {
+      "observer_to_flow_threshold": {
+        "description": "观察态→沉浸态阈值",
+        "type": "float",
+        "hint": "群活跃度达到此值时从观察态进入沉浸态",
+        "default": 0.4
+      },
+      "flow_to_active_threshold": {
+        "description": "沉浸态→活跃态阈值",
+        "type": "float",
+        "hint": "相关度达到此值时从沉浸态进入活跃态",
+        "default": 0.7
+      },
+      "max_reply_streak": {
+        "description": "最大连续回复数",
+        "type": "int",
+        "hint": "超过此数量将进入疲劳态",
+        "default": 5
+      },
+      "fatigue_recovery_minutes": {
+        "description": "疲劳恢复时间(分钟)",
+        "type": "int",
+        "default": 5
+      }
+    }
   },
-  "willingness_threshold": {
-    "description": "回复意愿阈值",
-    "type": "float",
-    "default": 0.5
+  "energy_system": {
+    "description": "能量系统配置",
+    "type": "object",
+    "items": {
+      "initial_energy": {
+        "description": "初始能量",
+        "type": "float",
+        "default": 0.8
+      },
+      "energy_cost_base": {
+        "description": "基础回复消耗",
+        "type": "float",
+        "default": 0.1
+      },
+      "energy_cost_per_char": {
+        "description": "每字额外消耗",
+        "type": "float",
+        "default": 0.0005
+      },
+      "energy_recovery_rate": {
+        "description": "能量恢复速率(/分钟)",
+        "type": "float",
+        "default": 0.02
+      },
+      "energy_recovery_on_at": {
+        "description": "被@时能量恢复",
+        "type": "float",
+        "default": 0.3
+      }
+    }
   },
-  "max_consecutive_responses": {
-    "description": "最大连续回复次数",
-    "type": "int",
-    "default": 3
+  "timing": {
+    "description": "时机控制配置",
+    "type": "object",
+    "items": {
+      "base_cooldown_seconds": {
+        "description": "基础冷却时间(秒)",
+        "type": "float",
+        "default": 45.0
+      },
+      "min_reply_delay": {
+        "description": "最小回复延迟(秒)",
+        "type": "float",
+        "default": 1.0
+      },
+      "max_reply_delay": {
+        "description": "最大回复延迟(秒)",
+        "type": "float",
+        "default": 10.0
+      },
+      "heartbeat_interval_seconds": {
+        "description": "心跳间隔(秒)",
+        "type": "float",
+        "default": 15.0
+      }
+    }
   },
-  "focus_chat_enabled": {
-    "description": "是否启用专注聊天",
-    "type": "bool",
-    "default": true
+  "learning": {
+    "description": "学习系统配置",
+    "type": "object",
+    "items": {
+      "enable_online_learning": {
+        "description": "启用在线学习",
+        "type": "bool",
+        "default": true
+      },
+      "enable_offline_distillation": {
+        "description": "启用离线蒸馏",
+        "type": "bool",
+        "default": true
+      },
+      "distillation_interval_hours": {
+        "description": "蒸馏间隔(小时)",
+        "type": "int",
+        "default": 24
+      },
+      "strategy_memory_size": {
+        "description": "策略记忆容量",
+        "type": "int",
+        "default": 1000
+      },
+      "learning_rate": {
+        "description": "学习率",
+        "type": "float",
+        "default": 0.1
+      },
+      "discount_factor": {
+        "description": "折扣因子",
+        "type": "float",
+        "default": 0.95
+      }
+    }
   },
-  "min_interest_score": {
-    "description": "最小兴趣度分数",
-    "type": "float",
-    "default": 0.6
+  "reward": {
+    "description": "奖励函数配置",
+    "type": "object",
+    "items": {
+      "user_reply": {
+        "description": "用户回复奖励",
+        "type": "float",
+        "default": 0.5
+      },
+      "user_at_follow": {
+        "description": "用户@跟进奖励",
+        "type": "float",
+        "default": 1.0
+      },
+      "user_like": {
+        "description": "用户点赞奖励(表情回应)",
+        "type": "float",
+        "default": 0.3
+      },
+      "ignore_penalty": {
+        "description": "被忽略惩罚",
+        "type": "float",
+        "default": -0.2
+      },
+      "negative_penalty": {
+        "description": "负面反馈惩罚",
+        "type": "float",
+        "default": -1.0
+      },
+      "feedback_detection_window_seconds": {
+        "description": "反馈检测窗口(秒)",
+        "type": "int",
+        "default": 60
+      }
+    }
   },
-  "focus_timeout_seconds": {
-    "description": "专注聊天超时时间（秒）",
-    "type": "int",
-    "default": 300
-  },
-  "focus_max_responses": {
-    "description": "专注聊天最大回复次数",
-    "type": "int",
-    "default": 10
-  },
-  "fatigue_enabled": {
-    "description": "是否启用疲劳系统",
-    "type": "bool",
-    "default": true
-  },
-  "fatigue_threshold": {
-    "description": "疲劳阈值",
-    "type": "int",
-    "default": 5
-  },
-  "memory_enabled": {
-    "description": "是否启用记忆系统（需要安装 astrbot_plugin_memora_connect 插件）",
-    "type": "bool",
-    "default": false
-  },
-  "max_memories_recall": {
-    "description": "最大回忆记忆数量",
-    "type": "int",
-    "default": 10
-  },
-  "impression_enabled": {
-    "description": "是否启用印象系统（需要安装 astrbot_plugin_memora_connect 插件）",
-    "type": "bool",
-    "default": false
-  },
-  "observation_mode_threshold": {
-    "description": "观察模式阈值（群活跃度低于此值时进入观察）",
-    "type": "float",
-    "default": 0.2
-  },
-  "air_reading_enabled": {
-    "description": "是否启用读空气功能",
-    "type": "bool",
-    "default": true
-  },
-  "air_reading_no_reply_marker": {
-    "description": "读空气不回复标记（LLM返回此内容时不回复）",
+  "performance_mode": {
+    "description": "性能模式",
     "type": "string",
-    "default": "[DO_NOT_REPLY]"
+    "hint": "lightweight: 轻量模式(最少LLM调用); balanced: 平衡模式; quality: 质量优先(更多LLM调用)",
+    "default": "balanced",
+    "options": ["lightweight", "balanced", "quality"]
   },
-  "fatigue_decay_rate": {
-    "description": "疲劳度衰减率（每小时衰减的比例，0-1之间）",
-    "type": "float",
-    "default": 0.5
-  },
-  "fatigue_reset_interval": {
-    "description": "疲劳度重置间隔（小时）",
-    "type": "int",
-    "default": 6
-  },
-  "heartbeat_threshold": {
-    "description": "主动心跳触发门槛（0-1，越低越容易触发）",
-    "type": "float",
-    "default": 0.55
-  },
-  "at_boost_value": {
-    "description": "被@时一次性增强幅度（0-1）",
-    "type": "float",
-    "default": 0.5
+  "air_reading": {
+    "description": "读空气功能配置",
+    "type": "object",
+    "items": {
+      "enabled": {
+        "description": "启用读空气功能",
+        "type": "bool",
+        "default": true
+      },
+      "no_reply_marker": {
+        "description": "不回复标记",
+        "type": "string",
+        "hint": "LLM返回包含此标记时跳过回复",
+        "default": "<NO_RESPONSE>"
+      }
+    }
   }
 }
