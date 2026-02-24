@@ -1,6 +1,6 @@
-# AstrBot 群聊插件 v2.0
+# AstrBot 群聊主动回复插件插件
 
-基于心流理论的群聊主动对话插件，实现拟人化的智能交互体验。
+一个先进群聊交互插件，基于心流理论实现自适应对话节奏，融合AI算法与自主学习策略，能感知群聊氛围并自主学习最优策略，能像真人一样自然参与对话，带来沉浸式的拟人交互体验。
 
 ## 核心特性
 
@@ -13,12 +13,6 @@
     └──────────────────┴──────────────── 疲劳态
 ```
 
-| 状态 | 行为 | 触发条件 |
-|------|------|---------|
-| **观察态** | 静默观察，仅@触发 | 默认状态/活跃度低 |
-| **沉浸态** | 适度参与，跟随话题 | 群活跃度 > 0.4 |
-| **活跃态** | 高意愿回复，短冷却 | 相关性 > 0.7 或被@ |
-| **疲劳态** | 强制休息，恢复能量 | 连续回复 > 5 次 |
 
 ### 三路学习机制
 
@@ -33,81 +27,6 @@
 - 被@时快速恢复 (+0.3)
 - 正面反馈恢复 (+0.1)
 
-### 读空气功能
-
-LLM根据上下文判断是否应该回复，避免强行介入对话。
-
-## 安装
-
-```bash
-# 1. 克隆到插件目录
-cd AstrBot/data/plugins
-git clone https://github.com/qa296/astrbot_plugin_group_chat.git
-
-# 2. 安装依赖
-pip install jieba
-
-# 3. 重启 AstrBot 并在 WebUI 中启用插件
-```
-
-## 配置
-
-在 WebUI 的插件配置页面进行设置：
-
-### 基础配置
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `list_mode` | blacklist | 名单模式：blacklist/whitelist |
-| `groups` | [] | 群组名单 |
-| `performance_mode` | balanced | 性能模式：lightweight/balanced/quality |
-
-### 心流状态机
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `observer_to_flow_threshold` | 0.4 | 观察态→沉浸态阈值 |
-| `flow_to_active_threshold` | 0.7 | 沉浸态→活跃态阈值 |
-| `max_reply_streak` | 5 | 最大连续回复数 |
-| `fatigue_recovery_minutes` | 5 | 疲劳恢复时间(分钟) |
-
-### 能量系统
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `initial_energy` | 0.8 | 初始能量 |
-| `energy_cost_base` | 0.1 | 基础回复消耗 |
-| `energy_cost_per_char` | 0.0005 | 每字额外消耗 |
-| `energy_recovery_rate` | 0.02 | 每分钟恢复量 |
-| `energy_recovery_on_at` | 0.3 | 被@时恢复量 |
-
-### 时机控制
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `base_cooldown_seconds` | 45.0 | 基础冷却时间 |
-| `min_reply_delay` | 1.0 | 最小回复延迟 |
-| `max_reply_delay` | 10.0 | 最大回复延迟 |
-| `heartbeat_interval_seconds` | 15.0 | 心跳间隔 |
-
-### 学习系统
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `enable_online_learning` | true | 启用在线学习 |
-| `enable_offline_distillation` | true | 启用离线蒸馏 |
-| `distillation_interval_hours` | 24 | 蒸馏间隔 |
-| `strategy_memory_size` | 1000 | 策略容量 |
-
-### 奖励函数
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `user_reply` | 0.5 | 用户回复奖励 |
-| `user_at_follow` | 1.0 | 用户@跟进奖励 |
-| `user_like` | 0.3 | 用户点赞奖励 |
-| `ignore_penalty` | -0.2 | 被忽略惩罚 |
-| `negative_penalty` | -1.0 | 负面反馈惩罚 |
 
 ## 命令
 
@@ -149,33 +68,7 @@ pip install jieba
 | `cooldown` | 重置冷却 | `/心流调试 cooldown` |
 | `reset` | 完全重置 | `/心流调试 reset` |
 
-## 架构
 
-```
-astrbot_plugin_group_chat/
-├── main.py                    # 插件入口
-├── _conf_schema.json          # 配置Schema
-├── metadata.yaml              # 元数据
-├── requirements.txt           # 依赖
-├── core/                      # 核心层
-│   ├── state_machine.py       # 心流状态机
-│   ├── energy_system.py       # 能量系统
-│   └── decision_engine.py     # 决策引擎
-├── perception/                # 感知层
-│   ├── context_analyzer.py    # 上下文分析
-│   ├── activity_meter.py      # 活跃度计量
-│   └── topic_tracker.py       # 话题追踪
-├── learning/                  # 学习层
-│   ├── strategy_store.py      # 策略库
-│   ├── offline_distiller.py   # 离线蒸馏
-│   └── online_learner.py      # 在线学习
-├── execution/                 # 执行层
-│   ├── response_generator.py  # 回复生成
-│   ├── timing_controller.py   # 时机控制
-│   └── feedback_collector.py  # 反馈收集
-└── storage/                   # 存储层
-    └── persistence.py         # 持久化
-```
 
 ## 数据流
 
@@ -205,16 +98,6 @@ astrbot_plugin_group_chat/
 | `group_umo.json` | 群组UMO映射 |
 | `conversation_history.json` | 对话历史 |
 
-## 理论基础
-
-本插件基于心流理论设计，参考了以下研究成果：
-
-- **心流理论**：Csikszentmihalyi 提出的挑战-技能平衡模型
-- **集体心流**：群体层面的心流状态特征
-- **主动对话系统**：预期性、主动性、规划性三要素
-- **PRINCIPLES**：离线策略蒸馏方法
-
-详见：`心流理论在人机交互对话系统中的应用研究文献综述.md`
 
 ## 常见问题
 

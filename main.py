@@ -36,7 +36,7 @@ from astrbot.api.star import Context, Star, register
 @register(
     "astrbot_plugin_group_chat",
     "qa296",
-    "基于心流理论的群聊主动对话插件，支持智能回复决策和自主学习策略",
+    "一个先进的群聊交互插件，采用AI算法实现智能回复决策，能像真人一样主动参与对话，实现拟人化的主动交互体验。",
     "2.0.0",
     "https://github.com/qa296/astrbot_plugin_group_chat",
 )
