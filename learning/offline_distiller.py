@@ -58,7 +58,7 @@ class OfflineDistiller:
         # 加载已蒸馏的规则
         self._load_rules()
 
-        logger.info(f"离线蒸馏器初始化完成，已加载 {len(self._rules)} 条规则")
+        logger.info(f"离线蒸馏器已加载 {len(self._rules)} 条规则")
 
     def _create_scenario_templates(self) -> list[dict]:
         """创建场景模板"""

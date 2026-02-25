@@ -123,7 +123,7 @@ class DecisionEngine:
             "forced_decisions": 0,
         }
 
-        logger.info("决策引擎初始化完成")
+
 
     async def decide(self, state, context, energy: float = 0.8) -> Decision:
         """

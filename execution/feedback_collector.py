@@ -115,7 +115,7 @@ class FeedbackCollector:
             "牛逼",
         }
 
-        logger.info("反馈收集器初始化完成")
+
 
     def register_pending_feedback(self, group_id: str, event, bot_message: str):
         """

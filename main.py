@@ -90,7 +90,7 @@ class GroupChatPlugin(Star):
             "feedbacks_collected": 0,
         }
 
-        logger.info("群聊插件初始化完成")
+
 
     @filter.on_astrbot_loaded()
     async def on_astrbot_loaded(self):

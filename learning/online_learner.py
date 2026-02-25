@@ -69,7 +69,7 @@ class OnlineLearner:
         # 加载持久化数据
         self._load_q_table()
 
-        logger.info("在线学习器初始化完成")
+
 
     def _load_q_table(self):
         """加载 Q 表"""

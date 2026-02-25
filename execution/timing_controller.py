@@ -46,7 +46,7 @@ class TimingController:
         self._last_reply_times: dict[str, float] = {}
         self._cooldown_adjustments: dict[str, float] = {}
 
-        logger.info("时机控制器初始化完成")
+
 
     def should_reply_now(
         self, group_id: str, flow_state: str, energy: float, group_activity: float

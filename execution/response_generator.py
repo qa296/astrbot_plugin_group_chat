@@ -51,7 +51,7 @@ class ResponseGenerator:
         # 性能模式
         self.performance_mode = config.get("performance_mode", "balanced")
 
-        logger.info("回复生成器初始化完成")
+
 
     async def generate(self, event, context, decision) -> str | None:
         """

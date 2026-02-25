@@ -143,7 +143,7 @@ class ContextAnalyzer:
         # 缓存
         self._history_cache: dict[str, list[dict]] = {}
 
-        logger.info("上下文分析器初始化完成")
+
 
     async def analyze(self, event) -> AnalyzedContext:
         """
@@ -273,7 +273,7 @@ class ContextAnalyzer:
 
         # 同步到持久化
         if self.persistence:
-            from storage.persistence import ConversationRecord
+            from ..storage.persistence import ConversationRecord
 
             self.persistence.add_conversation_record(
                 group_id,

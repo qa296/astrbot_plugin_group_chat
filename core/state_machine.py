@@ -112,7 +112,7 @@ class FlowStateMachine:
         timing_config = config.get("timing", {})
         self.base_cooldown = timing_config.get("base_cooldown_seconds", 45.0)
 
-        logger.info(f"心流状态机初始化完成，已加载 {len(self._states)} 个群组状态")
+        logger.info(f"心流状态机初已加载 {len(self._states)} 个群组状态")
 
     def _load_states(self):
         """从持久化加载状态"""

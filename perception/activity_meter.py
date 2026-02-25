@@ -55,7 +55,7 @@ class ActivityMeter:
         self._cleanup_interval = 3600  # 1小时
         self._last_cleanup = time.time()
 
-        logger.info("活跃度计量器初始化完成")
+
 
     def record_message(self, group_id: str, user_id: str):
         """记录消息"""

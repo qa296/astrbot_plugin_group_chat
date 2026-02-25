@@ -132,7 +132,7 @@ class TopicTracker:
         self.shift_threshold = 0.3  # 关键词重叠低于此值认为话题转换
         self.topic_timeout = 600  # 话题超时时间（秒）
 
-        logger.info("话题追踪器初始化完成")
+
 
     def track(self, group_id: str, message: str, user_id: str) -> TopicTrackerResult:
         """

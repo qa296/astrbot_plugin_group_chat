@@ -70,7 +70,7 @@ class EnergySystem:
         self._energies: dict[str, float] = {}
         self._last_update: dict[str, float] = {}
 
-        logger.info("能量系统初始化完成")
+
 
     def get_energy(self, group_id: str) -> float:
         """获取群组当前能量"""

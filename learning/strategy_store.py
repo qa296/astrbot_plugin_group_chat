@@ -84,7 +84,7 @@ class StrategyStore:
         # 加载持久化数据
         self._load_strategies()
 
-        logger.info(f"策略库初始化完成，已加载 {len(self._strategies)} 条策略")
+        logger.info(f"策略库已加载 {len(self._strategies)} 条策略")
 
     def _load_strategies(self):
         """加载策略"""
