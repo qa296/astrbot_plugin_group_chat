@@ -13,19 +13,19 @@ AstrBot 群聊插件 v2.0
 import asyncio
 from typing import Any
 
-from core.decision_engine import DecisionEngine
-from core.energy_system import EnergySystem
-from core.state_machine import FlowState, FlowStateMachine
-from execution.feedback_collector import FeedbackCollector
-from execution.response_generator import ResponseGenerator
-from execution.timing_controller import TimingController
-from learning.offline_distiller import OfflineDistiller
-from learning.online_learner import OnlineLearner
-from learning.strategy_store import StrategyStore
-from perception.activity_meter import ActivityMeter
-from perception.context_analyzer import ContextAnalyzer
-from perception.topic_tracker import TopicTracker
-from storage.persistence import PersistenceManager
+from .core.decision_engine import DecisionEngine
+from .core.energy_system import EnergySystem
+from .core.state_machine import FlowState, FlowStateMachine
+from .execution.feedback_collector import FeedbackCollector
+from .execution.response_generator import ResponseGenerator
+from .execution.timing_controller import TimingController
+from .learning.offline_distiller import OfflineDistiller
+from .learning.online_learner import OnlineLearner
+from .learning.strategy_store import StrategyStore
+from .perception.activity_meter import ActivityMeter
+from .perception.context_analyzer import ContextAnalyzer
+from .perception.topic_tracker import TopicTracker
+from .storage.persistence import PersistenceManager
 
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
