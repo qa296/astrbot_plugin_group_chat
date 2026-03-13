@@ -327,7 +327,7 @@ class StrategyStore:
 
     def _to_storage_entry(self, strategy: StrategyEntry):
         """转换为存储格式"""
-        from storage.persistence import StrategyEntryData
+        from ..storage.persistence import StrategyEntryData
 
         return StrategyEntryData(
             id=strategy.id,

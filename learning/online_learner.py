@@ -82,7 +82,7 @@ class OnlineLearner:
     def _save_q_table(self):
         """保存 Q 表"""
         if self.persistence:
-            from storage.persistence import LearningData
+            from ..storage.persistence import LearningData
 
             q_table_dict = {
                 state: dict(actions) for state, actions in self._q_table.items()

@@ -426,7 +426,7 @@ class FlowStateMachine:
 
     def _persist_state(self, state: GroupState):
         """持久化状态"""
-        from storage.persistence import GroupStateData
+        from ..storage.persistence import GroupStateData
 
         state_data = GroupStateData(
             group_id=state.group_id,
