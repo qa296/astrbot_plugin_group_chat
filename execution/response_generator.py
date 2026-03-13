@@ -21,7 +21,7 @@ class GeneratedResponse:
     content: str
     should_send: bool
     method: str  # llm, template, skip
-    metadata: dict = None
+    metadata: dict = None # pyright: ignore[reportAssignmentType]
 
     def __post_init__(self):
         if self.metadata is None:

@@ -12,8 +12,6 @@ import random
 from collections import defaultdict
 from dataclasses import dataclass
 
-from astrbot.api import logger
-
 
 @dataclass
 class LearningConfig:
@@ -125,7 +123,7 @@ class OnlineLearner:
 
         return best_action
 
-    def update(self, state: str, action: str, reward: float, next_state: str = None):
+    def update(self, state: str, action: str, reward: float, next_state: str = None): # pyright: ignore[reportArgumentType]
         """
         更新 Q 值
 

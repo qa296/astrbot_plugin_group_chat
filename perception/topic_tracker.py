@@ -13,8 +13,6 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from astrbot.api import logger
-
 try:
     import jieba
     import jieba.analyse

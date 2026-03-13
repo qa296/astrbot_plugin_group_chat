@@ -13,6 +13,11 @@ AstrBot 群聊插件 v2.0
 import asyncio
 from typing import Any
 
+from astrbot.api import logger
+from astrbot.api.event import AstrMessageEvent, MessageChain, filter
+from astrbot.api.provider import LLMResponse
+from astrbot.api.star import Context, Star, register
+
 from .core.decision_engine import DecisionEngine
 from .core.energy_system import EnergySystem
 from .core.state_machine import FlowState, FlowStateMachine
@@ -27,17 +32,12 @@ from .perception.context_analyzer import ContextAnalyzer
 from .perception.topic_tracker import TopicTracker
 from .storage.persistence import PersistenceManager
 
-from astrbot.api import logger
-from astrbot.api.event import AstrMessageEvent, MessageChain, filter
-from astrbot.api.provider import LLMResponse
-from astrbot.api.star import Context, Star, register
-
 
 @register(
     "astrbot_plugin_group_chat",
     "qa296",
     "一个先进的群聊交互插件，采用AI算法实现智能回复决策，能像真人一样主动参与对话，实现拟人化的主动交互体验。",
-    "2.0.1",
+    "2.0.0",
     "https://github.com/qa296/astrbot_plugin_group_chat",
 )
 class GroupChatPlugin(Star):
@@ -89,8 +89,6 @@ class GroupChatPlugin(Star):
             "proactive_messages": 0,
             "feedbacks_collected": 0,
         }
-
-
 
     @filter.on_astrbot_loaded()
     async def on_astrbot_loaded(self):

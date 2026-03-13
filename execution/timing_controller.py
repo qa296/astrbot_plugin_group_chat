@@ -12,8 +12,6 @@ import random
 import time
 from dataclasses import dataclass
 
-from astrbot.api import logger
-
 
 @dataclass
 class TimingDecision:
