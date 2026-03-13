@@ -1,5 +1,5 @@
 name: "astrbot_plugin_group_chat"
 author: "qa296"
 desc: "一个先进群聊交互插件，基于心流理论实现自适应对话节奏，融合AI算法与自主学习策略，能感知群聊氛围并自主学习最优策略，能像真人一样自然参与对话，带来沉浸式的拟人交互体验"
-version: "2.0.0"
+version: "2.0.1"
 repo: "https://github.com/qa296/astrbot_plugin_group_chat"
