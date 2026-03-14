@@ -1,8 +1,8 @@
 """
 持久化管理器
 
-负责插件数据的持久化存储，数据存储在 data/plugins/astrbot_plugin_group_chat/ 目录下
-遵循 AstrBot 插件开发规范：持久化数据存储于 data 目录下，而非插件自身目录
+负责插件数据的持久化存储，数据存储在 data/plugin_data/astrbot_plugin_group_chat/ 目录下
+遵循 AstrBot 插件开发规范：持久化数据存储于 data/plugin_data 目录下
 """
 
 import json
@@ -11,6 +11,12 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
+
+try:
+    from astrbot.core.utils.astrbot_path import get_astrbot_data_path
+    HAS_ASTRBOT_PATH = True
+except ImportError:
+    HAS_ASTRBOT_PATH = False
 
 
 @dataclass
@@ -140,7 +146,12 @@ class PersistenceManager:
 
     def __init__(self, plugin_name: str = "astrbot_plugin_group_chat"):
         self.plugin_name = plugin_name
-        self.data_dir = Path("data") / "plugins" / plugin_name
+
+        if HAS_ASTRBOT_PATH:
+            self.data_dir = Path(get_astrbot_data_path()) / "plugin_data" / plugin_name
+        else:
+            self.data_dir = Path("data") / "plugin_data" / plugin_name
+
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         # 内存缓存

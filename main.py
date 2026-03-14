@@ -11,6 +11,7 @@ AstrBot 群聊插件 v2.0
 """
 
 import asyncio
+from datetime import datetime, timedelta
 from typing import Any
 
 from astrbot.api import logger
@@ -460,20 +461,32 @@ class GroupChatPlugin(Star):
             logger.error(f"发送主动消息失败: {e}")
 
     async def _distillation_loop(self):
-        """离线蒸馏循环"""
-        # 使用新的配置结构
+        """Offline distillation loop - runs at scheduled time daily"""
+        # Use new config structure
         distill_config = self.config.get("offline_distillation", {})
         if not distill_config.get("enabled", True):
             return
 
-        # 解析定时触发时间
+        # Parse schedule time for daily execution
         schedule_time = distill_config.get("schedule_time", "03:00")
-        interval_hours = 24  # 每天执行一次
+        target_hour, target_minute = map(int, schedule_time.split(":"))
+
+        # Calculate initial delay to reach the scheduled time
+        now = datetime.now()
+        target_time = now.replace(
+            hour=target_hour, minute=target_minute, second=0, microsecond=0
+        )
+        if target_time <= now:
+            target_time += timedelta(days=1)
+        initial_delay = (target_time - now).total_seconds()
+
+        logger.info(f"离线蒸馏将在 {schedule_time} 执行，首次延迟 {initial_delay / 3600:.1f} 小时")
+
+        # Wait for first scheduled time
+        await asyncio.sleep(initial_delay)
 
         while self._running:
             try:
-                await asyncio.sleep(interval_hours * 3600)
-
                 logger.info("开始执行离线蒸馏...")
 
                 # 执行蒸馏
