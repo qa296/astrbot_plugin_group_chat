@@ -97,8 +97,6 @@ class ContextAnalyzer:
         self.context = context
         self.config = config
         self.persistence = persistence
-
-        # 停用词
         self.stop_words = {
             "的",
             "了",
@@ -160,8 +158,15 @@ class ContextAnalyzer:
         message_str = event.message_str
         current_time = time.time()
 
-        # 更新对话历史
+        # 获取用户名
+        user_name = self._get_user_name(event)
+
+        # 更新对话历史（内部缓存）
         self._update_history(group_id, user_id, message_str, "user", current_time)
+
+        # 保存到持久化（用于离线蒸馏）
+        if self.persistence:
+            self.persistence.add_group_message(group_id, user_id, user_name, message_str)
 
         # 获取历史记录
         history = self._get_history(group_id)
@@ -614,3 +619,18 @@ class ContextAnalyzer:
         """清除对话历史"""
         if group_id in self._history_cache:
             del self._history_cache[group_id]
+
+    def _get_user_name(self, event) -> str:
+        """从事件中获取用户名"""
+        try:
+            # 尝试从消息对象获取
+            if hasattr(event, "message_obj") and hasattr(event.message_obj, "sender"):
+                sender = event.message_obj.sender
+                if hasattr(sender, "nickname"):
+                    return sender.nickname
+                if hasattr(sender, "name"):
+                    return sender.name
+            # 备用：使用user_id
+            return event.get_sender_id()
+        except Exception:
+            return event.get_sender_id()

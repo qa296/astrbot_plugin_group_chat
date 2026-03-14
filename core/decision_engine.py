@@ -91,20 +91,24 @@ class DecisionEngine:
     """
 
     def __init__(
-        self, config, strategy_store, online_learner=None, offline_distiller=None
+        self, config, strategy_store, online_learner=None, offline_distiller=None,
+        rule_matcher=None
     ):
         self.config = config
         self.strategy_store = strategy_store
         self.online_learner = online_learner
         self.offline_distiller = offline_distiller
+        self.rule_matcher = rule_matcher
 
         # 配置参数
         learning_config = config.get("learning", {})
         self.enable_online_learning = learning_config.get(
             "enable_online_learning", True
         )
-        self.enable_offline_distillation = learning_config.get(
-            "enable_offline_distillation", True
+
+        offline_distillation_config = config.get("offline_distillation", {})
+        self.enable_offline_distillation = offline_distillation_config.get(
+            "enabled", True
         )
 
         # 性能模式
@@ -121,9 +125,12 @@ class DecisionEngine:
             "online_decisions": 0,
             "heuristic_decisions": 0,
             "forced_decisions": 0,
+            "rule_matches": 0,
         }
 
-
+    def set_rule_matcher(self, rule_matcher):
+        """设置规则匹配器"""
+        self.rule_matcher = rule_matcher
 
     async def decide(self, state, context, energy: float = 0.8) -> Decision:
         """

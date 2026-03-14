@@ -107,16 +107,6 @@
         "type": "bool",
         "default": true
       },
-      "enable_offline_distillation": {
-        "description": "启用离线蒸馏",
-        "type": "bool",
-        "default": true
-      },
-      "distillation_interval_hours": {
-        "description": "蒸馏间隔(小时)",
-        "type": "int",
-        "default": 24
-      },
       "strategy_memory_size": {
         "description": "策略记忆容量",
         "type": "int",
@@ -191,6 +181,63 @@
         "type": "string",
         "hint": "LLM返回包含此标记时跳过回复",
         "default": "<NO_RESPONSE>"
+      }
+    }
+  },
+  "offline_distillation": {
+    "description": "离线蒸馏配置",
+    "type": "object",
+    "items": {
+      "enabled": {
+        "description": "启用离线蒸馏",
+        "type": "bool",
+        "default": true
+      },
+      "schedule_time": {
+        "description": "蒸馏触发时间",
+        "type": "string",
+        "hint": "每天固定时间触发，格式HH:MM",
+        "default": "03:00"
+      },
+      "max_messages": {
+        "description": "每次蒸馏最大消息数",
+        "type": "int",
+        "hint": "每次蒸馏处理的最大消息数量",
+        "default": 1000
+      },
+      "similarity": {
+        "description": "相似度匹配配置",
+        "type": "object",
+        "items": {
+          "threshold": {
+            "description": "相似度阈值",
+            "type": "float",
+            "hint": "相似度达到此值时触发回复",
+            "default": 0.6
+          },
+          "context_window": {
+            "description": "上下文窗口大小",
+            "type": "int",
+            "hint": "用于匹配的消息数量",
+            "default": 10
+          }
+        }
+      },
+      "rules": {
+        "description": "规则配置",
+        "type": "object",
+        "items": {
+          "max_similarity_rules": {
+            "description": "最大相似度规则数",
+            "type": "int",
+            "default": 500
+          },
+          "max_regex_rules": {
+            "description": "最大正则规则数",
+            "type": "int",
+            "default": 100
+          }
+        }
       }
     }
   }

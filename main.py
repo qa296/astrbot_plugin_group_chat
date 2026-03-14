@@ -26,6 +26,7 @@ from .execution.response_generator import ResponseGenerator
 from .execution.timing_controller import TimingController
 from .learning.offline_distiller import OfflineDistiller
 from .learning.online_learner import OnlineLearner
+from .learning.rule_matcher import RuleMatcher
 from .learning.strategy_store import StrategyStore
 from .perception.activity_meter import ActivityMeter
 from .perception.context_analyzer import ContextAnalyzer
@@ -58,12 +59,14 @@ class GroupChatPlugin(Star):
         # 3. 学习层
         self.online_learner = OnlineLearner(config, self.persistence)
         self.offline_distiller = OfflineDistiller(context, config, self.persistence)
+        self.rule_matcher = RuleMatcher(self.persistence, config)
 
         # 4. 核心层
         self.state_machine = FlowStateMachine(config, self.persistence)
         self.energy_system = EnergySystem(config, self.persistence)
         self.decision_engine = DecisionEngine(
-            config, self.strategy_store, self.online_learner, self.offline_distiller
+            config, self.strategy_store, self.online_learner, self.offline_distiller,
+            self.rule_matcher
         )
 
         # 5. 感知层
@@ -99,14 +102,21 @@ class GroupChatPlugin(Star):
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
         # 启动离线蒸馏循环
-        learning_config = self.config.get("learning", {})
-        if learning_config.get("enable_offline_distillation", True):
+        distill_config = self.config.get("offline_distillation", {})
+        if distill_config.get("enabled", True):
             self._distillation_task = asyncio.create_task(self._distillation_loop())
 
         # 启动定期保存任务
         self._save_task = asyncio.create_task(self._periodic_save())
 
-        logger.info("群聊插件后台任务已启动")
+        # 显示蒸馏状态
+        distill_stats = self.persistence.get_distillation_stats()
+        logger.info(
+            f"群聊插件后台任务已启动 - "
+            f"相似度规则: {distill_stats.get('total_similarity_rules', 0)}, "
+            f"正则规则: {distill_stats.get('total_regex_rules', 0)}, "
+            f"词表大小: {distill_stats.get('vocabulary_size', 0)}"
+        )
 
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
     async def on_group_message(self, event: AstrMessageEvent):
@@ -451,16 +461,33 @@ class GroupChatPlugin(Star):
 
     async def _distillation_loop(self):
         """离线蒸馏循环"""
-        learning_config = self.config.get("learning", {})
-        interval_hours = learning_config.get("distillation_interval_hours", 24)
+        # 使用新的配置结构
+        distill_config = self.config.get("offline_distillation", {})
+        if not distill_config.get("enabled", True):
+            return
+
+        # 解析定时触发时间
+        schedule_time = distill_config.get("schedule_time", "03:00")
+        interval_hours = 24  # 每天执行一次
 
         while self._running:
             try:
                 await asyncio.sleep(interval_hours * 3600)
 
                 logger.info("开始执行离线蒸馏...")
-                rules_count = await self.offline_distiller.distill()
-                logger.info(f"离线蒸馏完成，生成 {rules_count} 条规则")
+
+                # 执行蒸馏
+                result = await self.offline_distiller.distill()
+
+                # 刷新规则匹配器的向量缓存
+                self.rule_matcher.refresh_vectors()
+
+                logger.info(
+                    f"离线蒸馏完成: {result.get('groups_processed', 0)} 个群组, "
+                    f"{result.get('messages_processed', 0)} 条消息, "
+                    f"{result.get('similarity_rules_generated', 0)} 条相似度规则, "
+                    f"{result.get('regex_rules_generated', 0)} 条正则规则"
+                )
 
             except asyncio.CancelledError:
                 break
