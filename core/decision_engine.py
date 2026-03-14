@@ -273,66 +273,44 @@ class DecisionEngine:
         self, state, context, context_hash: str
     ) -> Decision | None:
         """离线蒸馏决策"""
-        if not self.offline_distiller:
+        if not self.rule_matcher:
             return None
 
         try:
-            rules = self.offline_distiller.get_rules()
-            if not rules:
+            current_message = getattr(context, "message_content", "")
+            if not current_message:
                 return None
 
-            group_activity = getattr(context, "group_activity", 0.5)
-            topic_coherence = getattr(context, "topic_coherence", 0.5)
-            relevance = getattr(context, "relevance_to_bot", 0.0)
-            flow_state = (
-                state.flow_state.value
-                if hasattr(state.flow_state, "value")
-                else str(state.flow_state)
+            context_text = self._get_context_text(context)
+            similarity_threshold = (
+                self.offline_distiller.similarity_threshold
+                if self.offline_distiller
+                else 0.6
             )
 
-            for rule in rules:
-                pattern = rule.get("pattern", {})
-                conditions = pattern.get("conditions", {})
+            match_result = self.rule_matcher.check_match(
+                current_context=context_text,
+                current_message=current_message,
+                similarity_threshold=similarity_threshold,
+            )
 
-                if (
-                    conditions.get("flow_state")
-                    and conditions["flow_state"] != flow_state
-                ):
-                    continue
+            if not match_result.get("matched"):
+                return None
 
-                if (
-                    conditions.get("min_activity")
-                    and group_activity < conditions["min_activity"]
-                ):
-                    continue
+            best_match = match_result.get("best_match", {})
+            match_type = best_match.get("type", "similarity")
+            confidence = best_match.get("score", 0.6)
 
-                if (
-                    conditions.get("min_coherence")
-                    and topic_coherence < conditions["min_coherence"]
-                ):
-                    continue
+            self._stats["rule_matches"] += 1
 
-                if (
-                    conditions.get("min_relevance")
-                    and relevance < conditions["min_relevance"]
-                ):
-                    continue
-
-                # 匹配成功
-                strategy = rule.get("strategy", {})
-                action_type = strategy.get("action", "wait")
-                confidence = rule.get("confidence", 0.6)
-
-                return Decision(
-                    action=ActionType(action_type),
-                    confidence=confidence,
-                    source=DecisionSource.DISTILLATION,
-                    should_act=action_type in ["reply", "initiate"],
-                    reply_probability=confidence,
-                    reasoning=f"蒸馏规则匹配: {rule.get('description', '')}",
-                )
-
-            return None
+            return Decision(
+                action=ActionType.REPLY,
+                confidence=confidence,
+                source=DecisionSource.DISTILLATION,
+                should_act=True,
+                reply_probability=confidence,
+                reasoning=f"蒸馏规则匹配({match_type}): {best_match.get('id', '')}",
+            )
         except Exception as e:
             logger.error(f"蒸馏决策失败: {e}")
             return None
@@ -423,6 +401,22 @@ class DecisionEngine:
             context_hash=context_hash,
             reasoning=f"启发式决策: flow={flow_state}, rel={relevance:.2f}, energy={energy:.2f}",
         )
+
+    def _get_context_text(self, context) -> str:
+        """从context获取对话上下文文本"""
+        history = getattr(context, "conversation_history", [])
+        if not history:
+            return ""
+
+        messages = []
+        for msg in history[-10:]:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if content:
+                prefix = "用户: " if role == "user" else "机器人: "
+                messages.append(prefix + content)
+
+        return "\n".join(messages)
 
     def _encode_state(self, state, context) -> str:
         """编码状态向量"""
