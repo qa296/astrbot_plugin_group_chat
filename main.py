@@ -39,7 +39,7 @@ from .storage.persistence import PersistenceManager
     "astrbot_plugin_group_chat",
     "qa296",
     "一个先进的群聊交互插件，采用AI算法实现智能回复决策，能像真人一样主动参与对话，实现拟人化的主动交互体验。",
-    "2.0.0",
+    "2.0.6",
     "https://github.com/qa296/astrbot_plugin_group_chat",
 )
 class GroupChatPlugin(Star):
