@@ -218,9 +218,12 @@ class PersistenceManager:
 
     def _save_json_file(self, filename: str, data: Any):
         """保存JSON文件"""
-        file_path = self._get_file_path(filename)
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        try:
+            file_path = self._get_file_path(filename)
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[Persistence] 保存 {filename} 失败: {e}")
 
     # ==================== 群组状态 ====================
 
@@ -689,6 +692,9 @@ class PersistenceManager:
         with self._lock:
             dirty_keys = list(self._dirty)
             self._dirty.clear()
+
+        if not dirty_keys:
+            return
 
         for key in dirty_keys:
             if key == "group_states":

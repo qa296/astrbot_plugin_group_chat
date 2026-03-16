@@ -119,6 +119,13 @@ class GroupChatPlugin(Star):
             f"词表大小: {distill_stats.get('vocabulary_size', 0)}"
         )
 
+        # 检查是否需要冷启动
+        if distill_stats.get("total_regex_rules", 0) == 0:
+            logger.info("检测到无规则，正在执行冷启动...")
+            await self.offline_distiller._cold_start()
+            self.rule_matcher.refresh_vectors()
+            logger.info("冷启动完成")
+
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
     async def on_group_message(self, event: AstrMessageEvent):
         """处理群聊消息的主入口"""

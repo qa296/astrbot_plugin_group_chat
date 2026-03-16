@@ -100,6 +100,13 @@ class OfflineDistiller:
         start_time = time.time()
         self._stats["total_distillations"] += 1
 
+        # 检查是否需要冷启动
+        sim_rules = self.persistence.get_all_similarity_rules()
+        regex_rules = self.persistence.get_all_regex_rules()
+        if not sim_rules and not regex_rules:
+            logger.info("无现有规则，执行冷启动...")
+            await self._cold_start()
+
         results = {
             "groups_processed": 0,
             "messages_processed": 0,
@@ -423,6 +430,181 @@ class OfflineDistiller:
             for rule in sorted_rules[: self.max_regex_rules]:
                 self.persistence.add_regex_rule(rule)
             logger.info(f"正则规则已修剪: {len(regex_rules)} -> {self.max_regex_rules}")
+
+    async def _cold_start(self):
+        """冷启动：基于人格生成初始规则"""
+        logger.info("执行冷启动...")
+
+        # 获取默认人格
+        persona_prompt = await self._get_default_persona_prompt()
+        if not persona_prompt:
+            logger.warning("无法获取人格，使用默认提示")
+            persona_prompt = "你是一个活跃的群聊助手，喜欢参与讨论"
+
+        # 使用 LLM 生成初始正则规则
+        regex_rules = await self._generate_initial_regex_rules(persona_prompt)
+        for rule in regex_rules:
+            self.persistence.add_regex_rule(rule)
+
+        logger.info(f"冷启动完成: 生成 {len(regex_rules)} 条正则规则")
+
+        # 更新全局词表
+        await self._update_global_vocabulary()
+
+        self.persistence.save_dirty()
+
+    async def _get_default_persona_prompt(self) -> str:
+        """获取默认人格提示"""
+        try:
+            pm = getattr(self.context, "provider_manager", None)
+            if not pm:
+                return ""
+
+            selected = getattr(pm, "selected_default_persona", {}) or {}
+            persona_name = selected.get("name", "")
+
+            if not persona_name:
+                return ""
+
+            personas = getattr(pm, "personas", {})
+            if isinstance(personas, dict):
+                persona_data = personas.get(persona_name, {})
+                if isinstance(persona_data, dict):
+                    return persona_data.get("prompt", "") or persona_data.get("description", "")
+            elif isinstance(personas, list):
+                for p in personas:
+                    if isinstance(p, dict) and p.get("name") == persona_name:
+                        return p.get("prompt", "") or p.get("description", "")
+
+            return ""
+        except Exception as e:
+            logger.warning(f"获取人格失败: {e}")
+            return ""
+
+    async def _generate_initial_regex_rules(
+        self, persona_prompt: str
+    ) -> list[RegexRule]:
+        """使用 LLM 生成初始正则规则"""
+        prompt = self._build_cold_start_prompt(persona_prompt)
+
+        try:
+            response = await self._call_llm(prompt)
+            if not response:
+                return self._get_fallback_regex_rules()
+
+            return self._parse_cold_start_response(response)
+        except Exception as e:
+            logger.error(f"LLM 生成初始规则失败: {e}")
+            return self._get_fallback_regex_rules()
+
+    def _build_cold_start_prompt(self, persona_prompt: str) -> str:
+        return f"""你是一个群聊助手的规则生成器。
+
+【人格设定】
+{persona_prompt}
+
+请根据以上人格设定，生成尽可能多的适合这个角色的群聊触发正则规则。
+这个正则是用来在群聊触发的，不是你bot想要说的话。
+你要做的是拟合bot想要回复的群聊说的话。
+
+规则应该能匹配以下场景：
+1. 正常群聊会使用的、通用的触发正则
+2. 正常的但是针对特定场景的触发正则
+3. 符合人设的通用的触发正则
+4. 符合人设的特定的触发正则
+5. 名字、唤醒触发的正则类似
+
+需要涵盖一下内容：
+1. 机器人感兴趣的
+2. 正常讨论
+3. 所有机器人名字
+
+请以 JSON 数组格式返回，每条规则包含：
+- "pattern": 正则表达式
+- "description": 规则描述
+- "trigger_count": 触发需要的匹配次数（1-3）
+
+返回格式示例：
+```json
+[
+  {{"pattern": ".*[?？].*", "description": "有人提问", "trigger_count": 1}},
+  {{"pattern": "帮助|求助", "description": "请求帮助", "trigger_count": 1}}
+]
+```"""
+
+    def _get_fallback_regex_rules(self) -> list[RegexRule]:
+        """获取备用正则规则"""
+        fallback_patterns = [
+            (r".*[?？].*", "有人提问", 1),
+            (r"@.*机器人", "被@", 1),
+            (r"求助|帮忙|帮助", "请求帮助", 1),
+            (r"哈哈|哈哈哈|hhhh", "笑声", 2),
+            (r"分享|推荐|安利", "分享内容", 1),
+        ]
+        rules = []
+        for i, (pattern, desc, count) in enumerate(fallback_patterns):
+            rule = RegexRule(
+                id=f"fallback_{i}",
+                pattern=pattern,
+                trigger_count=count,
+            )
+            rules.append(rule)
+        return rules
+
+    async def _call_llm(self, prompt: str) -> str | None:
+        """调用 LLM"""
+        try:
+            provider = self.context.get_using_provider()
+            if not provider:
+                logger.warning("LLM provider 不可用")
+                return None
+
+            response = await provider.text_chat(
+                prompt=prompt,
+                contexts=[],
+                image_urls=[],
+                system_prompt="你是一个群聊助手规则生成器，请直接返回 JSON 数组格式的规则，不要其他解释。",
+            )
+
+            if response and response.completion_text:
+                return response.completion_text.strip()
+
+            return None
+        except Exception as e:
+            logger.error(f"LLM 调用失败: {e}")
+            return None
+            return None
+
+    def _parse_cold_start_response(self, text: str) -> list[RegexRule]:
+        """解析 LLM 响应"""
+        rules = []
+
+        try:
+            import re
+
+            json_match = re.search(r"\[.*\]", text, re.DOTALL)
+            if not json_match:
+                return self._get_fallback_regex_rules()
+
+            import json
+
+            data = json.loads(json_match.group())
+            for i, item in enumerate(data):
+                pattern = item.get("pattern", "")
+                if not pattern:
+                    continue
+
+                rule = RegexRule(
+                    id=f"cold_start_{i}",
+                    pattern=pattern,
+                    trigger_count=item.get("trigger_count", 1),
+                )
+                rules.append(rule)
+
+        except Exception as e:
+            logger.error(f"解析冷启动响应失败: {e}")
+
+        return rules if rules else self._get_fallback_regex_rules()
 
     def get_stats(self) -> dict[str, Any]:
         """获取统计信息"""
