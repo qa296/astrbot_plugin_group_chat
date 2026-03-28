@@ -309,7 +309,7 @@ class GroupChatPlugin(Star):
         if not action:
             yield event.plain_result(
                 "用法: /心流调试 <action> [value]\n"
-                "actions: state, energy, cooldown, reset, 蒸馏"
+                "actions: state, energy, cooldown, reset, 蒸馏, 相似度"
             )
             return
 
@@ -361,6 +361,46 @@ class GroupChatPlugin(Star):
                 f"处理消息: {result.get('messages_processed', 0)}\n"
                 f"生成相似度规则: {result.get('similarity_rules_generated', 0)}\n"
                 f"生成正则规则: {result.get('regex_rules_generated', 0)}"
+            )
+            yield event.plain_result(msg)
+
+        elif action == "相似度":
+            # 获取 context_window 配置
+            distill_config = self.config.get("offline_distillation", {})
+            sim_config = distill_config.get("similarity", {})
+            context_window = sim_config.get("context_window", 10)
+
+            # 获取对话历史
+            history = self.context_analyzer._get_history(group_id)
+            recent_messages = history[-context_window:] if history else []
+
+            if not recent_messages:
+                yield event.plain_result("暂无对话历史")
+                return
+
+            # 构建上下文文本
+            context_text = "/".join(m.get("content", "") for m in recent_messages)
+
+            # 相似度匹配
+            sim_matches = self.rule_matcher.match_similarity(context_text, 0.0)
+            max_similarity = sim_matches[0]["similarity"] if sim_matches else 0.0
+
+            # 正则匹配 - 获取最后一条用户消息
+            last_user_message = ""
+            for m in reversed(recent_messages):
+                if m.get("role") == "user":
+                    last_user_message = m.get("content", "")
+                    break
+
+            regex_matches = self.rule_matcher.match_regex(last_user_message)
+            regex_count = len(regex_matches)
+
+            msg = (
+                f"🔍 相似度检测\n"
+                f"━━━━━━━━━━━━━━\n"
+                f"上下文消息数: {len(recent_messages)}\n"
+                f"最高相似度: {max_similarity:.2f}\n"
+                f"触发正则数: {regex_count}"
             )
             yield event.plain_result(msg)
 
