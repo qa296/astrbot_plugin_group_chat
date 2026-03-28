@@ -514,6 +514,10 @@ class GroupChatPlugin(Star):
             except Exception as e:
                 logger.error(f"离线蒸馏异常: {e}")
 
+            # 等待下一次调度时间
+            if self._running:
+                await asyncio.sleep(24 * 3600)
+
         logger.info("离线蒸馏循环已停止")
 
     async def _periodic_save(self):
