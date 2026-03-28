@@ -309,7 +309,7 @@ class GroupChatPlugin(Star):
         if not action:
             yield event.plain_result(
                 "用法: /心流调试 <action> [value]\n"
-                "actions: state, energy, cooldown, reset"
+                "actions: state, energy, cooldown, reset, 蒸馏"
             )
             return
 
@@ -345,6 +345,24 @@ class GroupChatPlugin(Star):
             self.energy_system.reset_energy(group_id)
             self.timing_controller.reset_cooldown(group_id)
             yield event.plain_result("群组状态已完全重置")
+
+        elif action == "蒸馏":
+            # 手动触发离线蒸馏
+            yield event.plain_result("📦 开始执行离线蒸馏，请稍候...")
+
+            result = await self.offline_distiller.distill()
+
+            self.rule_matcher.refresh_vectors()
+
+            msg = (
+                f"📦 离线蒸馏执行完成\n"
+                f"━━━━━━━━━━━━━━\n"
+                f"处理群组: {result.get('groups_processed', 0)}\n"
+                f"处理消息: {result.get('messages_processed', 0)}\n"
+                f"生成相似度规则: {result.get('similarity_rules_generated', 0)}\n"
+                f"生成正则规则: {result.get('regex_rules_generated', 0)}"
+            )
+            yield event.plain_result(msg)
 
         else:
             yield event.plain_result(f"未知操作: {action}")
