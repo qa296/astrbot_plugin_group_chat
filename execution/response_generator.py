@@ -84,10 +84,14 @@ class ResponseGenerator:
             # 构建系统提示
             system_prompt = self._build_system_prompt(persona, decision)
 
+            # 注入人设的 begin_dialogs 到对话上下文
+            begin_dialogs = persona.get("begin_dialogs", []) if persona else []
+            contexts = list(begin_dialogs) if begin_dialogs else []
+
             # 调用 LLM
             response = await provider.text_chat(
                 prompt=prompt,
-                contexts=[],
+                contexts=contexts,
                 image_urls=[],
                 system_prompt=system_prompt,
             )
@@ -140,10 +144,14 @@ class ResponseGenerator:
             # 构建系统提示
             system_prompt = self._build_proactive_system_prompt(persona)
 
+            # 注入人设的 begin_dialogs 到对话上下文
+            begin_dialogs = persona.get("begin_dialogs", []) if persona else []
+            contexts = list(begin_dialogs) if begin_dialogs else []
+
             # 调用 LLM
             response = await provider.text_chat(
                 prompt=prompt,
-                contexts=[],
+                contexts=contexts,
                 image_urls=[],
                 system_prompt=system_prompt,
             )
@@ -214,7 +222,8 @@ class ResponseGenerator:
 
     def _build_system_prompt(self, persona: dict, decision) -> str:
         """构建系统提示"""
-        base_prompt = """你是一个群聊中的机器人成员。你的回复应该：
+        # 无人设时的默认身份+行为
+        fallback_prompt = """你是一个群聊中的机器人成员。你的回复应该：
 1. 自然、友好，像真人一样
 2. 考虑当前群聊的氛围和话题
 3. 不要过于频繁地回复，避免刷屏
@@ -223,13 +232,19 @@ class ResponseGenerator:
         if persona and persona.get("enabled"):
             persona_prompt = persona.get("persona_prompt", "")
             if persona_prompt:
-                return f"【人格设定】\n{persona_prompt}\n\n{base_prompt}"
+                # 人设已定义身份，仅追加行为约束，避免身份冲突
+                behavior_prompt = """请注意以下群聊行为准则：
+1. 考虑当前群聊的氛围和话题
+2. 不要过于频繁地回复，避免刷屏
+3. 适时保持沉默也是一种好的选择"""
+                return f"【人格设定】\n{persona_prompt}\n\n{behavior_prompt}"
 
-        return base_prompt
+        return fallback_prompt
 
     def _build_proactive_system_prompt(self, persona: dict) -> str:
         """构建主动消息系统提示"""
-        base_prompt = """你是一个群聊中的机器人成员。你正在考虑是否主动发言。
+        # 无人设时的默认身份+行为
+        fallback_prompt = """你是一个群聊中的机器人成员。你正在考虑是否主动发言。
 主动发言应该：
 1. 有明确的参与目的，不是为了说话而说话
 2. 与当前话题相关或有新的有价值的内容
@@ -239,9 +254,15 @@ class ResponseGenerator:
         if persona and persona.get("enabled"):
             persona_prompt = persona.get("persona_prompt", "")
             if persona_prompt:
-                return f"【人格设定】\n{persona_prompt}\n\n{base_prompt}"
+                # 人设已定义身份，仅追加行为约束，避免身份冲突
+                behavior_prompt = """你正在考虑是否主动发言。主动发言应该：
+1. 有明确的参与目的，不是为了说话而说话
+2. 与当前话题相关或有新的有价值的内容
+3. 自然融入群聊氛围
+4. 如果没有合适的时机，选择沉默"""
+                return f"【人格设定】\n{persona_prompt}\n\n{behavior_prompt}"
 
-        return base_prompt
+        return fallback_prompt
 
     async def _resolve_persona(self, event) -> dict:
         """解析人格"""
@@ -312,22 +333,39 @@ class ResponseGenerator:
             if not persona_data:
                 return {"enabled": False}
 
-            # 提取 prompt
+            # 提取 prompt 和 begin_dialogs
+            begin_dialogs = []
             if isinstance(persona_data, dict):
                 prompt = (
                     persona_data.get("prompt") or persona_data.get("description") or ""
                 )
+                # 优先使用已处理的 begin_dialogs（AstrBot v4+ personas_v3 格式）
+                begin_dialogs = persona_data.get("_begin_dialogs_processed", [])
+                # 若无已处理版本，从原始 begin_dialogs 构造
+                if not begin_dialogs:
+                    raw_bd = persona_data.get("begin_dialogs", [])
+                    if raw_bd and len(raw_bd) % 2 == 0:
+                        user_turn = True
+                        for dialog in raw_bd:
+                            begin_dialogs.append({
+                                "role": "user" if user_turn else "assistant",
+                                "content": dialog,
+                                "_no_save": True,
+                            })
+                            user_turn = not user_turn
             else:
                 prompt = (
                     getattr(persona_data, "prompt", "")
                     or getattr(persona_data, "description", "")
                     or ""
                 )
+                begin_dialogs = getattr(persona_data, "_begin_dialogs_processed", [])
 
             result = {
                 "enabled": True,
                 "persona_name": persona_name,
                 "persona_prompt": prompt,
+                "begin_dialogs": begin_dialogs,
             }
 
             # 缓存
@@ -361,17 +399,31 @@ class ResponseGenerator:
 
                     if isinstance(personas, dict):
                         persona_data = personas.get(persona_name)
+                    elif isinstance(personas, list):
+                        for p in personas:
+                            name = (
+                                p.get("name")
+                                if isinstance(p, dict)
+                                else getattr(p, "name", None)
+                            )
+                            if name == persona_name:
+                                persona_data = p
+                                break
 
                     if persona_data:
-                        prompt = (
-                            persona_data.get("prompt", "")
-                            if isinstance(persona_data, dict)
-                            else ""
-                        )
+                        prompt = ""
+                        begin_dialogs = []
+                        if isinstance(persona_data, dict):
+                            prompt = persona_data.get("prompt", "")
+                            begin_dialogs = persona_data.get("_begin_dialogs_processed", [])
+                        else:
+                            prompt = getattr(persona_data, "prompt", "")
+                            begin_dialogs = getattr(persona_data, "_begin_dialogs_processed", [])
                         return {
                             "enabled": True,
                             "persona_name": persona_name,
                             "persona_prompt": prompt,
+                            "begin_dialogs": begin_dialogs,
                         }
         except Exception:
             pass
